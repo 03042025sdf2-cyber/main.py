@@ -1,0 +1,47 @@
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters import CommandStart
+from aiogram.enums import ParseMode
+import asyncio, re, os
+
+TOKEN = os.getenv("TOKEN")
+FILE = "total.txt"
+
+bot = Bot(token=TOKEN, parse_mode=ParseMode.HTML)
+dp = Dispatcher()
+
+def get_total():
+    if not os.path.exists(FILE):
+        return 0
+    try:
+        with open(FILE, "r") as f:
+            return int(f.read().strip() or 0)
+    except:
+        return 0
+
+def save_total(value):
+    with open(FILE, "w") as f:
+        f.write(str(value))
+
+@dp.message(CommandStart())
+async def start(message: types.Message):
+    total = get_total()
+    await message.answer(f"Привет! 👋\nЯ считаю числа.\nТекущая сумма: <b>{total}</b>")
+
+@dp.message()
+async def sum_numbers(message: types.Message):
+    text = message.text or ""
+    numbers = re.findall(r"(?m)^[+-]?\d+", text)
+    if not numbers:
+        return
+
+    total = get_total()
+    for num in numbers:
+        total += int(num)
+    save_total(total)
+    await message.reply(f"Общая сумма: <b>{total}</b>")
+
+async def main():
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())
